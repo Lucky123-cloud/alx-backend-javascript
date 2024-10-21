@@ -4,34 +4,36 @@ const { argv } = require('process');
 
 // Function to count students and send the data to the response stream
 function countStudents(path, res) {
-  if (fs.existsSync(path)) {
-    const data = fs.readFileSync(path, 'utf8').trim();
-    const lines = data.split('\n').filter((line) => line.trim() !== ''); // Remove empty lines
-
-    const result = [];
-    lines.forEach((line) => {
-      result.push(line.split(','));
-    });
-
-    result.shift(); // Remove the header row
-
-    const students = [];
-    result.forEach((row) => students.push([row[0], row[3]])); // [name, field]
-    const fields = new Set(students.map((student) => student[1]));
-
-    const fieldCounts = {};
-    fields.forEach((field) => { fieldCounts[field] = 0; });
-    students.forEach((student) => { fieldCounts[student[1]] += 1; });
-
-    res.write(`Number of students: ${students.length}\n`);
-
-    fields.forEach((field) => {
-      const studentsInField = students.filter((student) => student[1] === field).map((student) => student[0]);
-      res.write(`Number of students in ${field}: ${fieldCounts[field]}. List: ${studentsInField.join(', ')}\n`);
-    });
-  } else {
+  if (!fs.existsSync(path)) {
     throw new Error('Cannot load the database');
   }
+
+  const data = fs.readFileSync(path, 'utf8').trim();
+  const lines = data.split('\n').filter((line) => line.trim() !== ''); // Remove empty lines
+
+  const result = [];
+  lines.forEach((line) => {
+    result.push(line.split(','));
+  });
+
+  result.shift(); // Remove the header row
+
+  const students = [];
+  result.forEach((row) => students.push([row[0], row[3]])); // [name, field]
+  const fields = new Set(students.map((student) => student[1]));
+
+  const fieldCounts = {};
+  fields.forEach((field) => { fieldCounts[field] = 0; });
+  students.forEach((student) => { fieldCounts[student[1]] += 1; });
+
+  // Writing the number of students
+  res.write(`Number of students: ${students.length}\n`);
+
+  // For each field, write the number of students and their names
+  fields.forEach((field) => {
+    const studentsInField = students.filter((student) => student[1] === field).map((student) => student[0]);
+    res.write(`Number of students in ${field}: ${fieldCounts[field]}. List: ${studentsInField.join(', ')}\n`);
+  });
 }
 
 // Create the HTTP server
